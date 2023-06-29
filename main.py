@@ -1,16 +1,9 @@
-import os
-from langchain.llms import HuggingFacePipeline
-import time
-from langchain import PromptTemplate, HuggingFaceHub, LLMChain
 from langchain.chains import RetrievalQAWithSourcesChain
-import chromadb
-from chromadb.config import Settings
 from dotenv import load_dotenv
-import os
 from langchain.vectorstores import Chroma
-from chromadb.utils import embedding_functions
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.llms import OpenAI
+import functions_framework
 
 
 def ask_llm(question):
@@ -39,18 +32,38 @@ def ask_llm(question):
 
     chain = RetrievalQAWithSourcesChain.from_chain_type(llm, chain_type="stuff", retriever=db.as_retriever())
 
-    # Receive Result
-    result = chain({"question": question}, return_only_outputs=True)
-
-    print(result)
-    print("")
-
-    # Output Result
-    print("Answer: " + result["answer"].replace('\n', ' '))
-    print("Source: " + result["sources"])
-
-    return
+    return chain({"question": question}, return_only_outputs=True)
 
 
 if __name__ == '__main__':
-    ask_llm("How does the onboarding process work?")
+    print(ask_llm("How does the onboarding process work?"))
+
+
+# Register an HTTP function with the Functions Framework
+@functions_framework.http
+def http_handler(request):
+    if request.method != 'GET':
+        return {
+            "status": 400,
+            "error": "Only GET requests are supported"
+        }
+
+    if request.args.get('question') is None:
+        return {
+            "status": 400,
+            "error": "Missing required parameter: question"
+        }
+
+    question = request.args.get('question')
+
+    try:
+        result = ask_llm(question)
+        return {
+            "status": 200,
+            "result": result
+        }
+    except:
+        return {
+            "status": 500,
+            "error": "An error occurred"
+        }
