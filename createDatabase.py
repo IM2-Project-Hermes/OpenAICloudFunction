@@ -3,6 +3,7 @@ from chromadb.config import Settings
 from chromadb.utils import embedding_functions
 from langchain.text_splitter import CharacterTextSplitter
 import uuid
+from PyPDF2 import PdfReader
 
 
 # Read the file
@@ -12,8 +13,13 @@ def process_file(file_path):
     :param: file_path: path to the file
     :return: text of the file
     """
-    with open(file_path) as f:
-        text = f.read()
+    reader = PdfReader(file_path)
+    length = len(reader.pages)
+    text = ""
+    for i in range(length):
+        page = reader.pages[i]
+        text += page.extract_text()
+
     return text
 
 
@@ -55,23 +61,33 @@ def create_collection_with_sample_data():
         return
 
     file_paths = [
-        "data/ComplaintManagement.md",
-        "data/CustomerSupport.md",
-        "data/Onboarding.md",
-        "data/OrderDeveloping.md",
-        "data/OrderProcessing.md",
-        "data/ProjectManagement.md",
+        "data/Automotive_SPICE_for_Cybersecurity_EN.pdf",
+        "data/Criteria_for_car-washes_conforming_to_VDA_specifications.pdf",
+        "data/kvBAVQ-Automotive_SPICE_PAM_31_EN.pdf",
+        "data/Minimizing_risks_in_the_supply_chain.pdf",
+        "data/radar_handbook.pdf",
+        "data/VDA_Band_7_QDX_2021_English.pdf",
+        "data/VDA_QMC_Vol_7_-_QDX_Data_Exchange_Requirements_V2.0.pdf",
+        "data/VDA_Volume_Assessment_of_Quality_Management_Methods__Guideline__1st_Edition__November_2017__Online-Document.pdf",
+        "data/VDA_Volume_Quality-related_costs.pdf",
+        "data/VDA_Volume_SU_OTA_1_edition_2020.pdf",
     ]
 
     # Initialize the text splitter
     text_splitter = CharacterTextSplitter(chunk_size=300, chunk_overlap=10)
-    texts = []
 
     for file_path in file_paths:
 
         # Split the text
         text = process_file(file_path)
         split_text = text_splitter.split_text(text)
+
+        print(text)
+        print(f'${split_text} <- split_text')
+
+        if len(split_text) == 0:
+            print(f"Could not split {file_path}")
+            continue
 
         sources = []
         ids = []
