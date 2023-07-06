@@ -1,9 +1,10 @@
 import chromadb
 from chromadb.config import Settings
 from chromadb.utils import embedding_functions
-from langchain.text_splitter import CharacterTextSplitter
+from langchain.text_splitter import CharacterTextSplitter, SentenceTransformersTokenTextSplitter
 import uuid
 from PyPDF2 import PdfReader
+from dotenv import dotenv_values
 
 
 # Read the file
@@ -47,8 +48,11 @@ def create_collection_with_sample_data():
         persist_directory="db"
     ))
 
-    # all-MiniLM-L6-v2 embedding function
-    embedding_function = embedding_functions.DefaultEmbeddingFunction()
+    # openAI embedding function
+    embedding_function = embedding_functions.OpenAIEmbeddingFunction(
+                api_key=dotenv_values(".env")['OPENAI_API_KEY'],
+                model_name="text-embedding-ada-002"
+            )
 
     try:
         collection = chroma_client.create_collection(
@@ -74,7 +78,7 @@ def create_collection_with_sample_data():
     ]
 
     # Initialize the text splitter
-    text_splitter = CharacterTextSplitter(chunk_size=300, chunk_overlap=10)
+    text_splitter = SentenceTransformersTokenTextSplitter(chunk_size=300, chunk_overlap=10)
 
     for file_path in file_paths:
 
@@ -82,7 +86,9 @@ def create_collection_with_sample_data():
         text = process_file(file_path)
         split_text = text_splitter.split_text(text)
 
-        print(text)
+        print(f'{len(split_text)} <- len(split_text)')
+
+        #print(text)
         print(f'${split_text} <- split_text')
 
         if len(split_text) == 0:
@@ -94,14 +100,17 @@ def create_collection_with_sample_data():
 
         # Add the metadata to each chunk
         for x in range(len(split_text)):
-            sources.append({"name": find_name_from_source(file_path), "source": file_path})
-            ids.append(str(uuid.uuid4()).replace("-", ""))
 
-        collection.add(
-            documents=split_text,
-            metadatas=sources,
-            ids=ids
-        )
+            #print(len(split_text[x]))
+            #print(split_text[x])
+            #print(len(split_text))
+
+            collection.add(
+                documents=[split_text[x]],
+                metadatas=[{"name": find_name_from_source(file_path), "source": file_path}],
+                ids=[str(uuid.uuid4()).replace("-", "")]
+            )
+
 
         print(f"Saved {file_path}")
 
