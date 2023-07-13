@@ -16,18 +16,6 @@ def ask_llm(question):
         temperature=0,
     )
 
-    """
-    # all-MiniLM-L6-v2 embedding function from HuggingFace
-    model_name = "sentence-transformers/all-MiniLM-L6-v2"
-    model_kwargs = {'device': 'cpu'}
-    encode_kwargs = {'normalize_embeddings': False}
-    hf = HuggingFaceEmbeddings(
-        model_name=model_name,
-        model_kwargs=model_kwargs,
-        encode_kwargs=encode_kwargs
-    )
-    """
-
     embedding_function = OpenAIEmbeddings(
         model="text-embedding-ada-002",
         openai_api_key=dotenv_values(".env")['OPENAI_API_KEY'],
@@ -46,7 +34,7 @@ def ask_llm(question):
 
 
 if __name__ == '__main__':
-    print(ask_llm("What are types of radar power sources?"))
+    print(ask_llm(input("Enter a question: ")))
 
 
 # Register an HTTP function with the Functions Framework
@@ -72,8 +60,9 @@ def http_handler(request):
             "status": 200,
             "result": result
         }
-    except:
+    except Exception as e:
         return {
             "status": 500,
-            "error": "An error occurred"
+            "error": "An error occurred while processing the request",
+            "error-message": str(e)
         }
