@@ -40,17 +40,34 @@ if __name__ == '__main__':
 # Register an HTTP function with the Functions Framework
 @functions_framework.http
 def http_handler(request):
+    # Set CORS headers for the preflight request
+    if request.method == 'OPTIONS':
+        # Allows GET requests from any origin with the Content-Type
+        # header and caches preflight response for an 3600s
+        headers = {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET',
+            'Access-Control-Allow-Headers': 'Content-Type',
+            'Access-Control-Max-Age': '3600'
+        }
+
+        return '', 204, headers
+
+    headers = {
+        'Access-Control-Allow-Origin': '*'
+    }
+
     if request.method != 'GET':
         return {
             "status": 400,
             "error": "Only GET requests are supported"
-        }
+        }, 400, headers
 
     if request.args.get('question') is None:
         return {
             "status": 400,
             "error": "Missing required parameter: question"
-        }
+        }, 400, headers
 
     question = request.args.get('question')
 
@@ -59,10 +76,10 @@ def http_handler(request):
         return {
             "status": 200,
             "result": result
-        }
+        }, 200, headers
     except Exception as e:
         return {
             "status": 500,
             "error": "An error occurred while processing the request",
             "error-message": str(e)
-        }
+        }, 500, headers
